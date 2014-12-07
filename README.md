@@ -1,4 +1,4 @@
-rust-rcon
+rust-rcon [![Build Status](https://travis-ci.org/panicbit/rust-rcon.svg?branch=master)](https://travis-ci.org/panicbit/rust-rcon)
 =========
 
 An RCON implementation in the Rust programming language.
