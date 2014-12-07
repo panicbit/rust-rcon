@@ -5,6 +5,10 @@ An RCON implementation in the Rust programming language.
 
 This project aims to at least work with the Minecraft implementation of RCON.
 
+### Status
+- basic rcon sessions work
+- multi-packet responses are not implemented
+- the maximum request size of the Minecraft implementation is not respected
 
 ### How to install
 
@@ -24,6 +28,7 @@ extern crate rcon;
 ### Examples
 
 See the examples in [the examples folder](https://github.com/panicbit/rust-rcon/tree/master/examples)
+
 
 ### Contributing
 Contributions are welcome!
