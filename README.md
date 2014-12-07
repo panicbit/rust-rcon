@@ -24,3 +24,6 @@ extern crate rcon;
 ### Examples
 
 See the examples in [the examples folder](https://github.com/panicbit/rust-rcon/tree/master/examples)
+
+### Contributing
+Contributions are welcome!
