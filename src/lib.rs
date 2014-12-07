@@ -6,7 +6,6 @@ pub use error::RconResult;
 pub use error::RconError;
 
 mod packet;
-mod manager;
 mod error;
 
 pub struct Connection {
