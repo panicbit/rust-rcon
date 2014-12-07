@@ -19,3 +19,8 @@ git = "https://github.com/panicbit/rust-rcon.git"
 ```rust
 extern crate rcon;
 ```
+
+
+### Examples
+
+See the examples in [the examples folder](https://github.com/panicbit/rust-rcon/tree/master/examples)
