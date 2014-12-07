@@ -1,0 +1,5 @@
+[package]
+
+name = "rcon"
+version = "0.0.1"
+authors = ["panicbit <panicbit@users.noreply.github.com>"]
