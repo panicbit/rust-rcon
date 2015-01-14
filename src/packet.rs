@@ -1,7 +1,7 @@
 use std::io::IoResult;
 use std::fmt;
 
-#[deriving(Show)]
+#[derive(Show)]
 pub enum PacketType {
     Auth,
     AuthResponse,
@@ -83,8 +83,8 @@ impl Packet {
         // type
         let ptype = try!(r.read_le_i32());
         // body
-        let body_length = (length - 10) as uint;
-        let body = String::from_utf8(try!(r.read_exact(body_length as uint))).ok().unwrap();
+        let body_length = length - 10;
+        let body = String::from_utf8(try!(r.read_exact(body_length as usize))).ok().unwrap();
         // terminating nulls
         try!(r.read_byte());
         try!(r.read_byte());
@@ -113,10 +113,10 @@ impl fmt::Show for Packet {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f,
 r"Packet {{
-    len: {},
-    id: {},
-    type: {},
-    body: {}
+    len: {:?},
+    id: {:?},
+    type: {:?},
+    body: {:?}
 }}",
         self.length, self.id, self.get_type(), self.body)
     }

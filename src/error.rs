@@ -37,6 +37,6 @@ impl fmt::Show for RconError {
 
 impl FromError<IoError> for RconError {
     fn from_error(err: IoError) -> RconError {
-        RconError::Other(box err)
+        RconError::Other(Box::new(err))
     }
 }
