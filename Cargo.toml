@@ -3,6 +3,10 @@
 name = "rcon"
 version = "0.0.2"
 authors = ["panicbit <panicbit@users.noreply.github.com>"]
+description = "An rcon protocol implementation"
+license = "MIT"
+keywords = ["source", "rcon", "protocol", "minecraft"]
+repository = "https://github.com/panicbit/rust-rcon"
 
 [dependencies.podio]
 version = "0"
