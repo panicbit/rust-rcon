@@ -1,6 +1,6 @@
 extern crate podio;
 
-use std::net::TcpStream;
+use std::net::{TcpStream, ToSocketAddrs};
 use std::io::{self, BufStream};
 use packet::{Packet, PacketType};
 pub use error::RconResult;
@@ -14,7 +14,7 @@ pub struct Connection {
 }
 
 impl Connection {
-    pub fn connect(address: &str, password: &str) -> RconResult<Connection> {
+    pub fn connect<T: ToSocketAddrs>(address: T, password: &str) -> RconResult<Connection> {
         let tcp_stream = try!(TcpStream::connect(address));
         let mut conn = Connection {
             stream: BufStream::new(tcp_stream),
