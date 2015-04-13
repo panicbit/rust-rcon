@@ -1,9 +1,11 @@
-use std::io::IoError;
-use std::error::{Error, FromError};
+use std::io;
+use std::error::Error;
 use std::fmt;
+use std::convert::From;
 
 pub type RconResult<T> = Result<T, RconError>;
 
+#[derive(Debug)]
 pub enum RconError {
     Auth,
     Other(Box<Error>)
@@ -16,27 +18,16 @@ impl Error for RconError {
             RconError::Other(ref err) => err.description()
         }
     }
-
-    fn detail(&self) -> Option<String> {
-        match *self {
-            RconError::Auth => None,
-            RconError::Other(ref err) => err.detail()
-        }
-    }
 }
 
-impl fmt::Show for RconError {
+impl fmt::Display for RconError {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        let desc = self.description();
-        match self.detail() {
-            Some(detail) => write!(fmt, "{} ({})", desc, detail),
-            None => write!(fmt, "{}", desc)
-        }
+        write!(fmt, "{}", self.description())
     }
 }
 
-impl FromError<IoError> for RconError {
-    fn from_error(err: IoError) -> RconError {
+impl From<io::Error> for RconError {
+    fn from(err: io::Error) -> RconError {
         RconError::Other(Box::new(err))
     }
 }

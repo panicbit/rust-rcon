@@ -1,7 +1,10 @@
-use std::io::IoResult;
+use std::io::{self, Read, Write};
 use std::fmt;
+use podio::{LittleEndian, ReadPodExt, WritePodExt};
 
-#[derive(Show)]
+type LE = LittleEndian;
+
+#[derive(Debug)]
 pub enum PacketType {
     Auth,
     AuthResponse,
@@ -55,39 +58,39 @@ impl Packet {
         self.id < 0
     }
 
-    pub fn serialize<T: Writer>(&self, w: &mut T) -> IoResult<()> {
+    pub fn serialize<T: Write>(&self, w: &mut T) -> io::Result<()> {
         let length = 10 + self.body.len();
 
         // length
-        try!(w.write_le_i32(length as i32));
+        try!(w.write_i32::<LE>(length as i32));
         // id
-        try!(w.write_le_i32(self.id));
+        try!(w.write_i32::<LE>(self.id));
         // type
-        try!(w.write_le_i32(self.ptype));
+        try!(w.write_i32::<LE>(self.ptype));
         // body
-        try!(w.write_str(self.body.as_slice()));
+        try!(write!(w, "{}", &self.body));
         // terminating nulls
-        try!(w.write_char('\0'));
-        try!(w.write_char('\0'));
+        try!(w.write_u8(0));
+        try!(w.write_u8(0));
 
         try!(w.flush());
 
         Ok(())
     }
 
-    pub fn deserialize<T: Reader>(r: &mut T) -> IoResult<Packet> {
+    pub fn deserialize<T: Read>(r: &mut T) -> io::Result<Packet> {
         // length
-        let length = try!(r.read_le_i32());
+        let length = try!(r.read_i32::<LE>());
         // id
-        let id = try!(r.read_le_i32());
+        let id = try!(r.read_i32::<LE>());
         // type
-        let ptype = try!(r.read_le_i32());
+        let ptype = try!(r.read_i32::<LE>());
         // body
         let body_length = length - 10;
         let body = String::from_utf8(try!(r.read_exact(body_length as usize))).ok().unwrap();
         // terminating nulls
-        try!(r.read_byte());
-        try!(r.read_byte());
+        try!(r.read_u8());
+        try!(r.read_u8());
 
         let packet = Packet {
             length: length,
@@ -101,7 +104,7 @@ impl Packet {
     }
 
     pub fn get_body(&self) -> &str {
-        self.body.as_slice()
+        &self.body
     }
 
     pub fn get_type(&self) -> PacketType {
@@ -109,7 +112,7 @@ impl Packet {
     }
 }
 
-impl fmt::Show for Packet {
+impl fmt::Debug for Packet {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f,
 r"Packet {{
