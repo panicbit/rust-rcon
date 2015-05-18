@@ -10,3 +10,4 @@ repository = "https://github.com/panicbit/rust-rcon"
 
 [dependencies]
 podio = "0.1"
+bufstream = "0.1"

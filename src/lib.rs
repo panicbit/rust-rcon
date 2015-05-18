@@ -1,8 +1,10 @@
+extern crate bufstream;
 extern crate podio;
 
 use std::net::{TcpStream, ToSocketAddrs};
-use std::io::{self, BufStream};
+use std::io;
 use packet::{Packet, PacketType};
+use bufstream::BufStream;
 pub use error::RconResult;
 pub use error::RconError;
 
