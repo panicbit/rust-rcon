@@ -8,5 +8,5 @@ license = "MIT"
 keywords = ["source", "rcon", "protocol", "minecraft"]
 repository = "https://github.com/panicbit/rust-rcon"
 
-[dependencies.podio]
-version = "0"
+[dependencies]
+podio = "0.1"
