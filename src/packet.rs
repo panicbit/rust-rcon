@@ -87,7 +87,9 @@ impl Packet {
         let ptype = try!(r.read_i32::<LE>());
         // body
         let body_length = length - 10;
-        let body = String::from_utf8(try!(r.read_exact(body_length as usize))).ok().unwrap();
+        let mut body_buffer = Vec::with_capacity(body_length as usize);
+        try!(r.read_exact(&mut body_buffer));
+        let body = String::from_utf8(body_buffer).ok().unwrap();
         // terminating nulls
         try!(r.read_u8());
         try!(r.read_u8());
