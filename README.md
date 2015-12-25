@@ -14,8 +14,8 @@ This project aims to at least work with the Minecraft implementation of RCON.
 
 Add this your Cargo.toml:
 ```toml
-[dependencies.rcon]
-git = "https://github.com/panicbit/rust-rcon.git"
+[dependencies]
+rcon = "0"
 ```
 
 
