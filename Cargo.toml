@@ -1,10 +1,10 @@
 [package]
 
 name = "rcon"
-version = "0.0.4"
+version = "0.0.5"
 authors = ["panicbit <panicbit@users.noreply.github.com>"]
 description = "An rcon protocol implementation"
-license = "MIT"
+license = "MIT/Apache-2.0"
 keywords = ["source", "rcon", "protocol", "minecraft"]
 repository = "https://github.com/panicbit/rust-rcon"
 
