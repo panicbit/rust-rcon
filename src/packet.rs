@@ -97,7 +97,7 @@ impl Packet {
         // body
         let body_length = length - 10;
         let mut body_buffer = Vec::with_capacity(body_length as usize);
-        try!(r.read_exact(&mut body_buffer));
+        try!(r.take(body_length as u64).read_to_end(&mut body_buffer));
         let body = String::from_utf8(body_buffer).ok().unwrap();
         // terminating nulls
         try!(r.read_u8());
