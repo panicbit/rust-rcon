@@ -121,6 +121,10 @@ impl Packet {
     pub fn get_type(&self) -> PacketType {
         PacketType::from_i32(self.ptype, self.is_response)
     }
+
+    pub fn get_id(&self) -> i32 {
+        self.id
+    }
 }
 
 impl fmt::Debug for Packet {
