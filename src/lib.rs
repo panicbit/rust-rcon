@@ -41,7 +41,7 @@ impl Connection {
         Ok(conn)
     }
 
-    pub fn cmd(&mut self, cmd: &str) -> io::Result<String> {
+    pub fn cmd(&mut self, cmd: &str) -> Result<String> {
         try!(self.send(PacketType::ExecCommand, cmd));
 
         // the server processes packets in order, so send an empty packet and
