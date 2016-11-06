@@ -42,6 +42,13 @@ impl Connection {
     }
 
     pub fn cmd(&mut self, cmd: &str) -> Result<String> {
+        // Minecraft only supports a request payload length of max 1446 byte.
+        // However some tests showed that only requests with a payload length
+        // of 1413 byte or lower work reliable.
+        if cmd.len() > 1413 {
+            return Err(Error::CommandTooLong);
+        }
+
         try!(self.send(PacketType::ExecCommand, cmd));
 
         // the server processes packets in order, so send an empty packet and

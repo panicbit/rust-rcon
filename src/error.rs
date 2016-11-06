@@ -17,6 +17,7 @@ pub type Result<T> = result::Result<T, Error>;
 #[derive(Debug)]
 pub enum Error {
     Auth,
+    CommandTooLong,
     Io(io::Error)
 }
 
@@ -24,6 +25,7 @@ impl StdError for Error {
     fn description(&self) -> &str {
         match *self {
             Error::Auth => "authentication failed",
+            Error::CommandTooLong => "command exceeds the maximum length",
             Error::Io(ref err) => err.description(),
         }
     }
