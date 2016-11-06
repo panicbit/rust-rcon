@@ -1,7 +1,7 @@
 [package]
 
 name = "rcon"
-version = "0.0.5"
+version = "0.1.0"
 authors = ["panicbit <panicbit@users.noreply.github.com>"]
 description = "An rcon protocol implementation"
 license = "MIT/Apache-2.0"
