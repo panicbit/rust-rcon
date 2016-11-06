@@ -14,8 +14,9 @@ use std::net::{TcpStream, ToSocketAddrs};
 use std::io;
 use packet::{Packet, PacketType};
 use bufstream::BufStream;
-pub use error::RconResult;
-pub use error::RconError;
+
+pub use error::Result;
+pub use error::Error;
 
 mod packet;
 mod error;
@@ -28,7 +29,7 @@ pub struct Connection {
 const INITIAL_PACKET_ID: i32 = 1;
 
 impl Connection {
-    pub fn connect<T: ToSocketAddrs>(address: T, password: &str) -> RconResult<Connection> {
+    pub fn connect<T: ToSocketAddrs>(address: T, password: &str) -> Result<Connection> {
         let tcp_stream = try!(TcpStream::connect(address));
         let mut conn = Connection {
             stream: BufStream::new(tcp_stream),
@@ -63,12 +64,12 @@ impl Connection {
         Ok(result)
     }
 
-    fn auth(&mut self, password: &str) -> RconResult<()> {
+    fn auth(&mut self, password: &str) -> Result<()> {
         try!(self.send(PacketType::Auth, password));
         let received_packet = try!(self.recv());
 
         if received_packet.is_error() {
-            Err(RconError::Auth)
+            Err(Error::Auth)
         } else {
             Ok(())
         }

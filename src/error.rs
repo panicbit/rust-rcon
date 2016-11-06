@@ -8,45 +8,45 @@
 // according to those terms.
 
 use std::io;
-use std::error::Error;
+use std::error::Error as StdError;
 use std::fmt;
-use std::convert::From;
+use std::result;
 
-pub type RconResult<T> = Result<T, RconError>;
+pub type Result<T> = result::Result<T, Error>;
 
 #[derive(Debug)]
-pub enum RconError {
+pub enum Error {
     Auth,
     Io(io::Error)
 }
 
-impl Error for RconError {
+impl StdError for Error {
     fn description(&self) -> &str {
         match *self {
-            RconError::Auth => "authentication failed",
-            RconError::Io(ref err) => err.description(),
+            Error::Auth => "authentication failed",
+            Error::Io(ref err) => err.description(),
         }
     }
 
-    fn cause(&self) -> Option<&Error> {
+    fn cause(&self) -> Option<&StdError> {
         match *self {
-            RconError::Io(ref err) => Some(err),
+            Error::Io(ref err) => Some(err),
             _ => None,
         }
     }
 }
 
-impl fmt::Display for RconError {
+impl fmt::Display for Error {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            RconError::Io(ref err) => write!(fmt, "IO error: {}", err),
+            Error::Io(ref err) => write!(fmt, "IO error: {}", err),
             _ => write!(fmt, "{}", self.description()),
         }
     }
 }
 
-impl From<io::Error> for RconError {
-    fn from(err: io::Error) -> RconError {
-        RconError::Io(err)
+impl From<io::Error> for Error {
+    fn from(err: io::Error) -> Self {
+        Error::Io(err)
     }
 }
