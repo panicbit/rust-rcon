@@ -56,9 +56,9 @@ impl Packet {
     pub fn new(id: i32, ptype: PacketType, body: String) -> Packet {
         Packet {
             length: 10 + body.len() as i32,
-            id: id,
+            id,
             ptype: ptype.to_i32(),
-            body: body,
+            body,
             is_response: false
         }
     }
@@ -71,37 +71,37 @@ impl Packet {
         let length = 10 + self.body.len();
 
         // length
-        try!(w.write_i32::<LE>(length as i32));
+        w.write_i32::<LE>(length as i32)?;
         // id
-        try!(w.write_i32::<LE>(self.id));
+        w.write_i32::<LE>(self.id)?;
         // type
-        try!(w.write_i32::<LE>(self.ptype));
+        w.write_i32::<LE>(self.ptype)?;
         // body
-        try!(write!(w, "{}", &self.body));
+        write!(w, "{}", &self.body)?;
         // terminating nulls
-        try!(w.write_u8(0));
-        try!(w.write_u8(0));
+        w.write_u8(0)?;
+        w.write_u8(0)?;
 
-        try!(w.flush());
+        w.flush()?;
 
         Ok(())
     }
 
     pub fn deserialize<T: Read>(r: &mut T) -> io::Result<Packet> {
         // length
-        let length = try!(r.read_i32::<LE>());
+        let length = r.read_i32::<LE>()?;
         // id
-        let id = try!(r.read_i32::<LE>());
+        let id = r.read_i32::<LE>()?;
         // type
-        let ptype = try!(r.read_i32::<LE>());
+        let ptype = r.read_i32::<LE>()?;
         // body
         let body_length = length - 10;
         let mut body_buffer = Vec::with_capacity(body_length as usize);
-        try!(r.take(body_length as u64).read_to_end(&mut body_buffer));
+        r.take(body_length as u64).read_to_end(&mut body_buffer)?;
         let body = String::from_utf8(body_buffer).ok().unwrap();
         // terminating nulls
-        try!(r.read_u8());
-        try!(r.read_u8());
+        r.read_u8()?;
+        r.read_u8()?;
 
         let packet = Packet {
             length: length,
