@@ -7,24 +7,27 @@
 // notice may not be copied, modified, or distributed except
 // according to those terms.
 
-extern crate rcon;
+use rcon::{Connection, Error};
 
 /*
     This example expects a Minecraft with rcon enabled on port 25575
     and the rcon password "test"
 */
 
-fn main() {
+#[tokio::main]
+async fn main() -> Result<(), Error> {
     let address = "localhost:25575";
-    let mut conn = rcon::Connection::connect(address, "test").unwrap();
+    let mut conn = Connection::connect(address, "test").await?;
 
-    demo(&mut conn, "list");
-    demo(&mut conn, "say Rust lang rocks! ;P");
-    demo(&mut conn, "save-all");
+    demo(&mut conn, "list").await?;
+    demo(&mut conn, "say Rust lang rocks! ;P").await?;
+    demo(&mut conn, "save-all").await?;
     //demo(&mut conn, "stop");
+    Ok(())
 }
 
-fn demo(conn: &mut rcon::Connection, cmd: &str) {
-    let resp = conn.cmd(cmd).unwrap();
+async fn demo(conn: &mut Connection, cmd: &str) -> Result<(), Error> {
+    let resp = conn.cmd(cmd).await?;
     println!("{}", resp);
+    Ok(())
 }
