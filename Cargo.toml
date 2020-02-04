@@ -7,7 +7,11 @@ description = "An rcon protocol implementation"
 license = "MIT/Apache-2.0"
 keywords = ["source", "rcon", "protocol", "minecraft"]
 repository = "https://github.com/panicbit/rust-rcon"
+edition = "2018"
 
 [dependencies]
-podio = "0.1"
-bufstream = "0.1"
+err-derive = "0.2.2"
+tokio = { version = "0.2.11", features = ["tcp", "io-util", "dns"]}
+
+[dev-dependencies]
+tokio = { version = "0.2.11", features = ["macros"]}

@@ -7,19 +7,16 @@
 // notice may not be copied, modified, or distributed except
 // according to those terms.
 
-use std::io::{self, Read, Write};
-use std::fmt;
-use podio::{LittleEndian, ReadPodExt, WritePodExt};
+use std::io;
+use tokio::prelude::*;
 
-type LE = LittleEndian;
-
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum PacketType {
     Auth,
     AuthResponse,
     ExecCommand,
     ResponseValue,
-    Unknown(i32)
+    Unknown(i32),
 }
 
 impl PacketType {
@@ -29,7 +26,7 @@ impl PacketType {
             PacketType::AuthResponse => 2,
             PacketType::ExecCommand => 2,
             PacketType::ResponseValue => 0,
-            PacketType::Unknown(n) => n
+            PacketType::Unknown(n) => n,
         }
     }
 
@@ -39,27 +36,26 @@ impl PacketType {
             2 if is_response => PacketType::AuthResponse,
             2 => PacketType::ExecCommand,
             0 => PacketType::ResponseValue,
-            n => PacketType::Unknown(n)
+            n => PacketType::Unknown(n),
         }
     }
 }
 
+#[derive(Debug)]
 pub struct Packet {
     length: i32,
     id: i32,
-    ptype: i32,
+    ptype: PacketType,
     body: String,
-    is_response: bool
 }
 
 impl Packet {
     pub fn new(id: i32, ptype: PacketType, body: String) -> Packet {
         Packet {
             length: 10 + body.len() as i32,
-            id: id,
-            ptype: ptype.to_i32(),
-            body: body,
-            is_response: false
+            id,
+            ptype,
+            body,
         }
     }
 
@@ -67,48 +63,37 @@ impl Packet {
         self.id < 0
     }
 
-    pub fn serialize<T: Write>(&self, w: &mut T) -> io::Result<()> {
-        let length = 10 + self.body.len();
-
-        // length
-        try!(w.write_i32::<LE>(length as i32));
-        // id
-        try!(w.write_i32::<LE>(self.id));
-        // type
-        try!(w.write_i32::<LE>(self.ptype));
-        // body
-        try!(write!(w, "{}", &self.body));
-        // terminating nulls
-        try!(w.write_u8(0));
-        try!(w.write_u8(0));
-
-        try!(w.flush());
+    pub async fn serialize<T: Unpin + AsyncWrite>(&self, w: &mut T) -> io::Result<()> {
+        // AsyncWrite writes it's data using big endian, since we need little endian we manually convert it to bytes
+        w.write(&self.length.to_le_bytes()).await?;
+        w.write(&self.id.to_le_bytes()).await?;
+        w.write(&self.ptype.to_i32().to_le_bytes()).await?;
+        w.write(self.body.as_bytes()).await?;
+        w.write_u16(0).await?;
 
         Ok(())
     }
 
-    pub fn deserialize<T: Read>(r: &mut T) -> io::Result<Packet> {
-        // length
-        let length = try!(r.read_i32::<LE>());
-        // id
-        let id = try!(r.read_i32::<LE>());
-        // type
-        let ptype = try!(r.read_i32::<LE>());
-        // body
+    pub async fn deserialize<T: Unpin + AsyncRead>(r: &mut T) -> io::Result<Packet> {
+        // AsyncRead read it's data using big endian, so we need to swap the bytes
+        let length = i32::from_be(r.read_i32().await?);
+        let id = i32::from_be(r.read_i32().await?);
+        let ptype = i32::from_be(r.read_i32().await?);
         let body_length = length - 10;
         let mut body_buffer = Vec::with_capacity(body_length as usize);
-        try!(r.take(body_length as u64).read_to_end(&mut body_buffer));
-        let body = String::from_utf8(body_buffer).ok().unwrap();
+        r.take(body_length as u64)
+            .read_to_end(&mut body_buffer)
+            .await?;
+        let body = String::from_utf8(body_buffer)
+            .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?;
         // terminating nulls
-        try!(r.read_u8());
-        try!(r.read_u8());
+        r.read_u16().await?;
 
         let packet = Packet {
-            length: length,
-            id: id,
-            ptype: ptype,
-            body: body,
-            is_response: true
+            length,
+            id,
+            ptype: PacketType::from_i32(ptype, true),
+            body,
         };
 
         Ok(packet)
@@ -119,23 +104,10 @@ impl Packet {
     }
 
     pub fn get_type(&self) -> PacketType {
-        PacketType::from_i32(self.ptype, self.is_response)
+        self.ptype
     }
 
     pub fn get_id(&self) -> i32 {
         self.id
-    }
-}
-
-impl fmt::Debug for Packet {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f,
-r"Packet {{
-    len: {:?},
-    id: {:?},
-    type: {:?},
-    body: {:?}
-}}",
-        self.length, self.id, self.get_type(), self.body)
     }
 }

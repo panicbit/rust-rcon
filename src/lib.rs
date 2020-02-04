@@ -7,41 +7,46 @@
 // notice may not be copied, modified, or distributed except
 // according to those terms.
 
-extern crate bufstream;
-extern crate podio;
-
-use std::net::{TcpStream, ToSocketAddrs};
-use std::io;
+use err_derive::Error;
 use packet::{Packet, PacketType};
-use bufstream::BufStream;
-
-pub use error::Result;
-pub use error::Error;
+use std::io;
+use tokio::net::{TcpStream, ToSocketAddrs};
 
 mod packet;
-mod error;
+
+#[derive(Debug, Error)]
+pub enum Error {
+    #[error(display = "authentication failed")]
+    Auth,
+    #[error(display = "command exceeds the maximum length")]
+    CommandTooLong,
+    #[error(display = "{}", _0)]
+    Io(#[error(source)] io::Error),
+}
+
+pub type Result<T> = std::result::Result<T, Error>;
 
 pub struct Connection {
-    stream: BufStream<TcpStream>,
+    stream: TcpStream,
     next_packet_id: i32,
 }
 
 const INITIAL_PACKET_ID: i32 = 1;
 
 impl Connection {
-    pub fn connect<T: ToSocketAddrs>(address: T, password: &str) -> Result<Connection> {
-        let tcp_stream = try!(TcpStream::connect(address));
+    pub async fn connect<T: ToSocketAddrs>(address: T, password: &str) -> Result<Connection> {
+        let stream = TcpStream::connect(address).await?;
         let mut conn = Connection {
-            stream: BufStream::new(tcp_stream),
+            stream,
             next_packet_id: INITIAL_PACKET_ID,
         };
 
-        try!(conn.auth(password));
+        conn.auth(password).await?;
 
         Ok(conn)
     }
 
-    pub fn cmd(&mut self, cmd: &str) -> Result<String> {
+    pub async fn cmd(&mut self, cmd: &str) -> Result<String> {
         // Minecraft only supports a request payload length of max 1446 byte.
         // However some tests showed that only requests with a payload length
         // of 1413 byte or lower work reliable.
@@ -49,16 +54,16 @@ impl Connection {
             return Err(Error::CommandTooLong);
         }
 
-        try!(self.send(PacketType::ExecCommand, cmd));
+        self.send(PacketType::ExecCommand, cmd).await?;
 
         // the server processes packets in order, so send an empty packet and
         // remember its id to detect the end of a multi-packet response
-        let end_id = try!(self.send(PacketType::ExecCommand, ""));
+        let end_id = self.send(PacketType::ExecCommand, "").await?;
 
         let mut result = String::new();
 
         loop {
-            let received_packet = try!(self.recv());
+            let received_packet = self.recv().await?;
 
             if received_packet.get_id() == end_id {
                 // This is the response to the end-marker packet
@@ -71,9 +76,14 @@ impl Connection {
         Ok(result)
     }
 
-    fn auth(&mut self, password: &str) -> Result<()> {
-        try!(self.send(PacketType::Auth, password));
-        let received_packet = try!(self.recv());
+    async fn auth(&mut self, password: &str) -> Result<()> {
+        self.send(PacketType::Auth, password).await?;
+        let received_packet = loop {
+            let received_packet = self.recv().await?;
+            if received_packet.get_type() == PacketType::AuthResponse {
+                break received_packet;
+            }
+        };
 
         if received_packet.is_error() {
             Err(Error::Auth)
@@ -82,17 +92,17 @@ impl Connection {
         }
     }
 
-    fn send(&mut self, ptype: PacketType, body: &str) -> io::Result<i32> {
+    async fn send(&mut self, ptype: PacketType, body: &str) -> io::Result<i32> {
         let id = self.generate_packet_id();
 
         let packet = Packet::new(id, ptype, body.into());
-        try!(packet.serialize(&mut self.stream));
+        packet.serialize(&mut self.stream).await?;
 
         Ok(id)
     }
 
-    fn recv(&mut self) -> io::Result<Packet> {
-        Packet::deserialize(&mut self.stream)
+    async fn recv(&mut self) -> io::Result<Packet> {
+        Packet::deserialize(&mut self.stream).await
     }
 
     fn generate_packet_id(&mut self) -> i32 {
@@ -100,8 +110,10 @@ impl Connection {
 
         // only use positive ids as the server uses negative ids to signal
         // a failed authentication request
-        self.next_packet_id =
-            self.next_packet_id.checked_add(1).unwrap_or(INITIAL_PACKET_ID);
+        self.next_packet_id = self
+            .next_packet_id
+            .checked_add(1)
+            .unwrap_or(INITIAL_PACKET_ID);
 
         id
     }
