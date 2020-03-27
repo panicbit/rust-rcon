@@ -8,7 +8,6 @@ This project aims to at least work with the Minecraft implementation of RCON.
 ## Status
 - basic rcon sessions work
 - multi-packet responses are not implemented
-- the maximum request size of the Minecraft implementation is not respected
 
 ## How to install
 
@@ -28,6 +27,12 @@ extern crate rcon;
 ## Examples
 
 See the examples in [the examples folder](https://github.com/panicbit/rust-rcon/tree/master/examples)
+
+## Features
+
+ * `delay` Adds a 3 millisecond delay to each command for compatiblity with the offical Minecraft server implmentation
+
+The `delay` feature is enabled by default.
 
 ## License
 
