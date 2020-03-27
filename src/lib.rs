@@ -60,17 +60,16 @@ impl Connection {
 
         self.send(PacketType::ExecCommand, cmd).await?;
 
-		if cfg!(feature = "delay") {
-				// We are simply too swift for the Notchian minecraft server
-				// Give it some time to breath and not kill out connection
-				// Issue described here https://bugs.mojang.com/browse/MC-72390
-				delay_for(Duration::from_millis(DELAY_TIME_MILLIS)).await;
-		}
+        if cfg!(feature = "delay") {
+            // We are simply too swift for the Notchian minecraft server
+            // Give it some time to breath and not kill out connection
+            // Issue described here https://bugs.mojang.com/browse/MC-72390
+            delay_for(Duration::from_millis(DELAY_TIME_MILLIS)).await;
+        }
 
         // the server processes packets in order, so send an empty packet and
         // remember its id to detect the end of a multi-packet response
         let end_id = self.send(PacketType::ExecCommand, "").await?;
-
 
         let mut result = String::new();
 

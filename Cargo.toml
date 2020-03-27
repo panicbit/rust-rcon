@@ -10,10 +10,10 @@ edition = "2018"
 
 [dependencies]
 err-derive = "0.2.2"
-tokio = { version = "0.2.11", features = ["tcp", "io-util", "dns", "time"] }
+tokio = { version = "0.2.13", features = ["tcp", "io-util", "dns", "time"] }
 
 [dev-dependencies]
-tokio = { version = "0.2.11", features = ["macros"] }
+tokio = { version = "0.2.13", features = ["macros"] }
 
 [features]
 default = ["delay"]
