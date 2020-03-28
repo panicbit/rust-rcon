@@ -10,7 +10,9 @@
 use err_derive::Error;
 use packet::{Packet, PacketType};
 use std::io;
+use std::time::Duration;
 use tokio::net::{TcpStream, ToSocketAddrs};
+use tokio::time::delay_for;
 
 mod packet;
 
@@ -32,6 +34,8 @@ pub struct Connection {
 }
 
 const INITIAL_PACKET_ID: i32 = 1;
+
+const DELAY_TIME_MILLIS: u64 = 3;
 
 impl Connection {
     pub async fn connect<T: ToSocketAddrs>(address: T, password: &str) -> Result<Connection> {
@@ -55,6 +59,13 @@ impl Connection {
         }
 
         self.send(PacketType::ExecCommand, cmd).await?;
+
+        if cfg!(feature = "delay") {
+            // We are simply too swift for the Notchian minecraft server
+            // Give it some time to breath and not kill out connection
+            // Issue described here https://bugs.mojang.com/browse/MC-72390
+            delay_for(Duration::from_millis(DELAY_TIME_MILLIS)).await;
+        }
 
         // the server processes packets in order, so send an empty packet and
         // remember its id to detect the end of a multi-packet response
@@ -96,6 +107,7 @@ impl Connection {
         let id = self.generate_packet_id();
 
         let packet = Packet::new(id, ptype, body.into());
+
         packet.serialize(&mut self.stream).await?;
 
         Ok(id)
