@@ -35,8 +35,8 @@ pub struct Connection {
 }
 
 const INITIAL_PACKET_ID: i32 = 1;
-
 const DELAY_TIME_MILLIS: u64 = 3;
+const MINECRAFT_MAX_PAYLOAD_SIZE: usize = 1413;
 
 impl Connection {
     /// Connect to an rcon server.
@@ -49,10 +49,7 @@ impl Connection {
     }
 
     pub async fn cmd(&mut self, cmd: &str) -> Result<String> {
-        // Minecraft only supports a request payload length of max 1446 byte.
-        // However some tests showed that only requests with a payload length
-        // of 1413 byte or lower work reliable.
-        if cmd.len() > 1413 {
+        if self.minecraft_quirks_enabled && cmd.len() > MINECRAFT_MAX_PAYLOAD_SIZE {
             return Err(Error::CommandTooLong);
         }
 
@@ -136,8 +133,14 @@ impl Builder {
         Self::default()
     }
 
-    /// Enabling this reduces the change of crashing the Minecraft server
-    /// by delaying commands by 3ms. See https://bugs.mojang.com/browse/MC-72390
+    /// This enables the following quirks for Minecraft:
+    ///
+    /// Commands are delayed by 3ms to reduce the chance of crashing the server.
+    /// See https://bugs.mojang.com/browse/MC-72390
+    ///
+    /// The command length is limited to 1413 bytes.
+    /// Tests have shown the server to not work reliably
+    /// with greater command lengths.
     pub fn enable_minecraft_quirks(mut self, value: bool) -> Self {
         self.minecraft_quirks_enabled = value;
         self
