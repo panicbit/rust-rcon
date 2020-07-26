@@ -30,12 +30,6 @@ extern crate rcon;
 
 See the examples in [the examples folder](https://github.com/panicbit/rust-rcon/tree/master/examples)
 
-## Features
-
- * `delay` Adds a 3 millisecond delay to each command for compatiblity with the offical Minecraft server implementation (https://bugs.mojang.com/browse/MC-72390)
-
-The `delay` feature is enabled by default.
-
 ## License
 
 Licensed under either of
