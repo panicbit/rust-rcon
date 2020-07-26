@@ -7,7 +7,9 @@ This project aims to at least work with the Minecraft implementation of RCON.
 
 ## Status
 - basic rcon sessions work
-- multi-packet responses are not implemented
+- multi-packet responses
+    - works with minecraft
+    - not working with factorio
 
 ## How to install
 
