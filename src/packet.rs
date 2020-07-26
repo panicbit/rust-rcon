@@ -81,17 +81,19 @@ impl Packet {
     }
 
     pub async fn deserialize<T: Unpin + AsyncRead>(r: &mut T) -> io::Result<Packet> {
-        // AsyncRead read it's data using big endian, so we need to swap the bytes
-        let length = i32::from_be(r.read_i32().await?);
-        let id = i32::from_be(r.read_i32().await?);
-        let ptype = i32::from_be(r.read_i32().await?);
+        let length = r.read_i32_le().await?;
+        let id = r.read_i32_le().await?;
+        let ptype = r.read_i32_le().await?;
         let body_length = length - 10;
         let mut body_buffer = Vec::with_capacity(body_length as usize);
+
         r.take(body_length as u64)
             .read_to_end(&mut body_buffer)
             .await?;
+
         let body = String::from_utf8(body_buffer)
             .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?;
+
         // terminating nulls
         r.read_u16().await?;
 
