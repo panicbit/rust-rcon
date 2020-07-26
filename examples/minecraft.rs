@@ -17,7 +17,9 @@ use rcon::{Connection, Error};
 #[tokio::main]
 async fn main() -> Result<(), Error> {
     let address = "localhost:25575";
-    let mut conn = Connection::connect(address, "test").await?;
+    let mut conn = Connection::builder()
+        .enable_minecraft_quirks(true)
+        .connect(address, "test").await?;
 
     demo(&mut conn, "list").await?;
     demo(&mut conn, "say Rust lang rocks! ;P").await?;
