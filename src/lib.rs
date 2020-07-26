@@ -39,11 +39,17 @@ const DELAY_TIME_MILLIS: u64 = 3;
 const MINECRAFT_MAX_PAYLOAD_SIZE: usize = 1413;
 
 impl Connection {
+    /// Create a connectiion builder.
+    /// Allows configuring the rcon connection.
+    pub fn builder() -> Builder {
+        Builder::new()
+    }
+
     /// Connect to an rcon server.
     /// By default this enables minecraft quirks.
     /// If you need to customize this behaviour, use a Builder.
     pub async fn connect<T: ToSocketAddrs>(address: T, password: &str) -> Result<Connection> {
-        Builder::new()
+        Self::builder()
             .enable_minecraft_quirks(true)
             .connect(address, password).await
     }
