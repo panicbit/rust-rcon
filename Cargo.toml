@@ -16,5 +16,4 @@ tokio = { version = "0.2.13", features = ["tcp", "io-util", "dns", "time"] }
 tokio = { version = "0.2.13", features = ["macros"] }
 
 [features]
-default = ["delay"]
-delay = []
+default = []

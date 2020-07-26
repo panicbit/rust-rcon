@@ -31,6 +31,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub struct Connection {
     stream: TcpStream,
     next_packet_id: i32,
+    minecraft_quirks_enabled: bool,
 }
 
 const INITIAL_PACKET_ID: i32 = 1;
@@ -38,16 +39,13 @@ const INITIAL_PACKET_ID: i32 = 1;
 const DELAY_TIME_MILLIS: u64 = 3;
 
 impl Connection {
+    /// Connect to an rcon server.
+    /// By default this enables minecraft quirks.
+    /// If you need to customize this behaviour, use a Builder.
     pub async fn connect<T: ToSocketAddrs>(address: T, password: &str) -> Result<Connection> {
-        let stream = TcpStream::connect(address).await?;
-        let mut conn = Connection {
-            stream,
-            next_packet_id: INITIAL_PACKET_ID,
-        };
-
-        conn.auth(password).await?;
-
-        Ok(conn)
+        Builder::new()
+            .enable_minecraft_quirks(true)
+            .connect(address, password).await
     }
 
     pub async fn cmd(&mut self, cmd: &str) -> Result<String> {
@@ -60,10 +58,7 @@ impl Connection {
 
         self.send(PacketType::ExecCommand, cmd).await?;
 
-        if cfg!(feature = "delay") {
-            // We are simply too swift for the Notchian minecraft server
-            // Give it some time to breath and not kill out connection
-            // Issue described here https://bugs.mojang.com/browse/MC-72390
+        if self.minecraft_quirks_enabled {
             delay_for(Duration::from_millis(DELAY_TIME_MILLIS)).await;
         }
 
@@ -128,5 +123,39 @@ impl Connection {
             .unwrap_or(INITIAL_PACKET_ID);
 
         id
+    }
+}
+
+#[derive(Default, Debug)]
+pub struct Builder {
+    minecraft_quirks_enabled: bool,
+}
+
+impl Builder {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Enabling this reduces the change of crashing the Minecraft server
+    /// by delaying commands by 3ms. See https://bugs.mojang.com/browse/MC-72390
+    pub fn enable_minecraft_quirks(mut self, value: bool) -> Self {
+        self.minecraft_quirks_enabled = value;
+        self
+    }
+
+    pub async fn connect<A>(self, address: A, password: &str) -> Result<Connection>
+    where
+        A: ToSocketAddrs
+    {
+        let stream = TcpStream::connect(address).await?;
+        let mut conn = Connection {
+            stream,
+            next_packet_id: INITIAL_PACKET_ID,
+            minecraft_quirks_enabled: self.minecraft_quirks_enabled,
+        };
+
+        conn.auth(password).await?;
+
+        Ok(conn)
     }
 }
