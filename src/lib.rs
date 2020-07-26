@@ -16,6 +16,10 @@ use tokio::time::delay_for;
 
 mod packet;
 
+const INITIAL_PACKET_ID: i32 = 1;
+const DELAY_TIME_MILLIS: u64 = 3;
+const MINECRAFT_MAX_PAYLOAD_SIZE: usize = 1413;
+
 #[derive(Debug, Error)]
 pub enum Error {
     #[error(display = "authentication failed")]
@@ -32,11 +36,8 @@ pub struct Connection {
     stream: TcpStream,
     next_packet_id: i32,
     minecraft_quirks_enabled: bool,
+    factorio_quirks_enabled: bool,
 }
-
-const INITIAL_PACKET_ID: i32 = 1;
-const DELAY_TIME_MILLIS: u64 = 3;
-const MINECRAFT_MAX_PAYLOAD_SIZE: usize = 1413;
 
 impl Connection {
     /// Create a connectiion builder.
@@ -65,6 +66,26 @@ impl Connection {
             delay_for(Duration::from_millis(DELAY_TIME_MILLIS)).await;
         }
 
+        let response = self.receive_response().await?;
+
+        Ok(response)
+    }
+
+    async fn receive_response(&mut self) -> Result<String> {
+        if self.factorio_quirks_enabled {
+            self.receive_single_packet_response().await
+        } else {
+            self.receive_multi_packet_response().await
+        }
+    }
+
+    async fn receive_single_packet_response(&mut self) -> Result<String> {
+        let received_packet = self.receive_packet().await?;
+
+        Ok(received_packet.get_body().into())
+    }
+
+    async fn receive_multi_packet_response(&mut self) -> Result<String> {
         // the server processes packets in order, so send an empty packet and
         // remember its id to detect the end of a multi-packet response
         let end_id = self.send(PacketType::ExecCommand, "").await?;
@@ -72,23 +93,21 @@ impl Connection {
         let mut result = String::new();
 
         loop {
-            let received_packet = self.recv().await?;
+            let received_packet = self.receive_packet().await?;
 
             if received_packet.get_id() == end_id {
                 // This is the response to the end-marker packet
-                break;
+                return Ok(result);
             }
 
             result += received_packet.get_body();
         }
-
-        Ok(result)
     }
 
     async fn auth(&mut self, password: &str) -> Result<()> {
         self.send(PacketType::Auth, password).await?;
         let received_packet = loop {
-            let received_packet = self.recv().await?;
+            let received_packet = self.receive_packet().await?;
             if received_packet.get_type() == PacketType::AuthResponse {
                 break received_packet;
             }
@@ -111,7 +130,7 @@ impl Connection {
         Ok(id)
     }
 
-    async fn recv(&mut self) -> io::Result<Packet> {
+    async fn receive_packet(&mut self) -> io::Result<Packet> {
         Packet::deserialize(&mut self.stream).await
     }
 
@@ -132,6 +151,7 @@ impl Connection {
 #[derive(Default, Debug)]
 pub struct Builder {
     minecraft_quirks_enabled: bool,
+    factorio_quirks_enabled: bool,
 }
 
 impl Builder {
@@ -152,6 +172,16 @@ impl Builder {
         self
     }
 
+    /// This enables the following quirks for Factorio:
+    ///
+    /// Only single-packet responses are enabled.
+    /// Multi-packets appear to work differently than in other server implementations
+    /// (an empty packet gives no response).
+    pub fn enable_factorio_quirks(mut self, value: bool) -> Self {
+        self.factorio_quirks_enabled = value;
+        self
+    }
+
     pub async fn connect<A>(self, address: A, password: &str) -> Result<Connection>
     where
         A: ToSocketAddrs
@@ -161,6 +191,7 @@ impl Builder {
             stream,
             next_packet_id: INITIAL_PACKET_ID,
             minecraft_quirks_enabled: self.minecraft_quirks_enabled,
+            factorio_quirks_enabled: self.factorio_quirks_enabled,
         };
 
         conn.auth(password).await?;
