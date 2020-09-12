@@ -1,6 +1,6 @@
 [package]
 name = "rcon"
-version = "0.3.0"
+version = "0.3.1"
 authors = ["panicbit <panicbit@users.noreply.github.com>"]
 description = "An rcon protocol implementation"
 license = "MIT OR Apache-2.0"
@@ -9,11 +9,11 @@ repository = "https://github.com/panicbit/rust-rcon"
 edition = "2018"
 
 [dependencies]
-err-derive = "0.2.2"
-tokio = { version = "0.2.13", features = ["tcp", "io-util", "dns", "time"] }
+err-derive = "0.2.4"
+tokio = { version = "0.2.22", features = ["tcp", "io-util", "dns", "time"] }
 
 [dev-dependencies]
-tokio = { version = "0.2.13", features = ["macros"] }
+tokio = { version = "0.2.22", features = ["macros"] }
 
 [features]
 default = []
