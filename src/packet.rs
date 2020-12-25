@@ -8,7 +8,7 @@
 // according to those terms.
 
 use std::io;
-use tokio::prelude::*;
+use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum PacketType {

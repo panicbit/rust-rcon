@@ -12,7 +12,6 @@ use packet::{Packet, PacketType};
 use std::io;
 use std::time::Duration;
 use tokio::net::{TcpStream, ToSocketAddrs};
-use tokio::time::delay_for;
 
 mod packet;
 
@@ -63,7 +62,7 @@ impl Connection {
         self.send(PacketType::ExecCommand, cmd).await?;
 
         if self.minecraft_quirks_enabled {
-            delay_for(Duration::from_millis(DELAY_TIME_MILLIS)).await;
+            tokio::time::sleep(Duration::from_millis(DELAY_TIME_MILLIS)).await;
         }
 
         let response = self.receive_response().await?;
