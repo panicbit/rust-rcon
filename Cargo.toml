@@ -9,6 +9,7 @@ repository = "https://github.com/panicbit/rust-rcon"
 edition = "2018"
 
 [dependencies]
+async-trait = "0.1.42"
 err-derive = "0.3.0"
 tokio = { version = "1.0.0", features = ["net", "io-util", "time", "macros"] }
 
