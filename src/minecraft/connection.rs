@@ -29,7 +29,7 @@ impl MinecraftConnection {
     async fn auth(&mut self, password: &str) -> Result<()> {
         self.send_packet(
             MinecraftPacket::new(
-                self.next_packet_id,
+                0,
                 PacketType::Request(3),
                 password.to_string(),
             )
@@ -37,7 +37,7 @@ impl MinecraftConnection {
 
         let received_packet = loop {
             let received_packet = self.receive_packet().await?;
-            if let PacketType::Response(2) = received_packet.get_type() {
+            if let PacketType::Response(2) = received_packet.get_type(true) {
                 break received_packet;
             }
         };
@@ -58,7 +58,7 @@ impl Connection for MinecraftConnection {
         let stream = TcpStream::connect(address).await?;
         let mut conn = MinecraftConnection {
             stream,
-            next_packet_id: INITIAL_PACKET_ID as i32,
+            next_packet_id: 0,
         };
 
         conn.auth(password).await?;
@@ -74,8 +74,8 @@ impl Connection for MinecraftConnection {
 
         self.next_packet_id = self.send_packet(
             MinecraftPacket::new(
-                self.next_packet_id,
-                PacketType::Request(0),
+                0,
+                PacketType::Request(2),
                 command.to_owned()
             )
         ).await?;
@@ -87,6 +87,7 @@ impl Connection for MinecraftConnection {
         Ok(response)
     }
 
+
     /// Receives a response from the rcon server
     async fn receive_response(&mut self) -> io::Result<String> {
         // The server processes packets in order, so send an empty packet and
@@ -94,12 +95,12 @@ impl Connection for MinecraftConnection {
         let end_id = self.send_packet(
             MinecraftPacket::new(
                 self.next_packet_id,
-                PacketType::Request(0),
+                PacketType::Request(2),
                 "".to_string(),
             )
         ).await?;
 
-        let mut result = String::with_capacity(48);
+        let mut result = String::with_capacity(64);
 
         loop {
             let received_packet = self.receive_packet().await?;
@@ -111,18 +112,17 @@ impl Connection for MinecraftConnection {
 
             result.push_str(received_packet.get_body());
         }
-
     }
 
     /// Low level function that send a Packet, returns the `id` of the sended 
     /// packet to be incremented
-    async fn send_packet(&mut self, packet: Self::Packet) -> io::Result<i32> {
+    async fn send_packet(&mut self, mut packet: Self::Packet) -> io::Result<i32> {
         // I dont know if factorio uses some bits for something in particular
         let id = match self.next_packet_id + 1 {
-            n if n & 0x3fff != 0 => INITIAL_PACKET_ID as i32,
+            n if n & 0x3fff == 0 => INITIAL_PACKET_ID as i32,
             n => n,
         };
-
+        packet.id = id;
         packet.serialize(&mut self.stream).await?;
 
         Ok(id)

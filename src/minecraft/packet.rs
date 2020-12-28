@@ -10,7 +10,7 @@ use crate::packet::{Packet, PacketType};
 /// 
 #[derive(Debug)]
 pub struct MinecraftPacket {
-    id: i32,
+    pub id: i32,
     packet_size: i32,
 
     /// This String must be converted to the required specification at the send
@@ -54,7 +54,6 @@ impl Packet for MinecraftPacket {
     /// Serializes de packets, aka convert and send
     async fn serialize<T: Unpin + AsyncWrite + Send>(&self, w: &mut T) -> io::Result<()> {
         let mut buf = Vec::with_capacity(self.packet_size as usize);
-
         buf.write_i32_le(self.packet_size).await?;
         buf.write_i32_le(self.id).await?;
         buf.write_i32_le(self.ptype_n).await?;
@@ -78,7 +77,6 @@ impl Packet for MinecraftPacket {
         r.take(body_length as u64)
             .read_to_end(&mut body)
             .await?;
-
         let body = String::from_utf8(body)
             .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?;
 
@@ -103,11 +101,11 @@ impl Packet for MinecraftPacket {
 
     /// Gets the packet type
     #[inline]
-    fn get_type(&self) -> PacketType {
+    fn get_type(&self, is_response: bool) -> PacketType {
         match self.ptype_n {
             0 => PacketType::Response(0),
+            2 if is_response => PacketType::Response(2),
             2 => PacketType::Request(2),
-            3 => PacketType::Request(3),
             _ => todo!(),
         }
     }

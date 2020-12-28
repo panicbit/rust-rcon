@@ -103,9 +103,10 @@ impl Packet for FactorioPacket {
 
     /// Gets the packet type
     #[inline]
-    fn get_type(&self) -> PacketType {
+    fn get_type(&self, is_response: bool) -> PacketType {
         match self.ptype_n {
             0 => PacketType::Response(0),
+            2 if is_response => PacketType::Response(2),
             2 => PacketType::Request(2),
             3 => PacketType::Request(3),
             _ => todo!(),

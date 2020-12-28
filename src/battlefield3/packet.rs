@@ -149,7 +149,7 @@ impl Packet for Btf3Packet {
     }
     /// Gets the packet type
     #[inline]
-    fn get_type(&self) -> PacketType {
+    fn get_type(&self, _is_response: bool) -> PacketType {
         self.ptype
     }
     /// Returns the id of the packet and also increments it

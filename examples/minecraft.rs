@@ -3,8 +3,8 @@ use rcon::prelude::*;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let address = "127.0.0.1:1234";
-    let mut conn = MinecraftConnection::connect(address, "test").await?;
+    let address = "127.0.0.1:25575";
+    let mut conn = MinecraftConnection::connect(address, "root").await?;
 
     demo(&mut conn, "list").await?;
     demo(&mut conn, "say Rust lang rocks! ;P").await?;

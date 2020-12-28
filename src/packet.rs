@@ -40,7 +40,7 @@ pub trait Packet: Sized {
     /// Gets the body of the packet
     fn get_body(&self) -> &str; 
     /// Gets the packet type
-    fn get_type(&self) -> PacketType;
+    fn get_type(&self, is_response: bool) -> PacketType;
 
     /// Returns the id of the packet and also increments it
     fn get_id(&self) -> i32;

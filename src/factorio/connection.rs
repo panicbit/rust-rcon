@@ -34,7 +34,7 @@ impl FactorioConnection {
 
         let received_packet = loop {
             let received_packet = self.receive_packet().await?;
-            if let PacketType::Response(2) = received_packet.get_type() {
+            if let PacketType::Response(2) = received_packet.get_type(true) {
                 break received_packet;
             }
         };
