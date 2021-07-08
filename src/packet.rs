@@ -8,7 +8,11 @@
 // according to those terms.
 
 use std::io;
+#[cfg(feature = "runtime-tokio")]
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
+#[cfg(feature = "runtime-async_std")]
+use async_std::io::{Read as AsyncRead, ReadExt, Write as AsyncWrite, prelude::WriteExt};
+use bytes::BufMut;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum PacketType {
@@ -68,11 +72,11 @@ impl Packet {
         // This is done in order to not overwhelm a Minecraft server
         let mut buf = Vec::with_capacity(self.length as usize);
 
-        buf.write_i32_le(self.length).await?;
-        buf.write_i32_le(self.id).await?;
-        buf.write_i32_le(self.ptype.to_i32()).await?;
-        buf.write_all(self.body.as_bytes()).await?;
-        buf.write_all(b"\x00\x00").await?;
+        buf.put_slice(&self.length.to_le_bytes());
+        buf.put_slice(&self.id.to_le_bytes());
+        buf.put_slice(&self.ptype.to_i32().to_le_bytes());
+        buf.put_slice(self.body.as_bytes());
+        buf.put_slice(&[0x00, 0x00]);
 
         w.write_all(&buf).await?;
 
@@ -80,9 +84,14 @@ impl Packet {
     }
 
     pub async fn deserialize<T: Unpin + AsyncRead>(r: &mut T) -> io::Result<Packet> {
-        let length = r.read_i32_le().await?;
-        let id = r.read_i32_le().await?;
-        let ptype = r.read_i32_le().await?;
+        let mut buf  = [0u8; 4];
+
+        r.read_exact(&mut buf).await?;
+        let length = i32::from_le_bytes(buf);
+        r.read_exact(&mut buf).await?;
+        let id = i32::from_le_bytes(buf);
+        r.read_exact(&mut buf).await?;
+        let ptype = i32::from_le_bytes(buf);
         let body_length = length - 10;
         let mut body_buffer = Vec::with_capacity(body_length as usize);
 
@@ -94,7 +103,8 @@ impl Packet {
             .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?;
 
         // terminating nulls
-        r.read_u16().await?;
+        let mut buf = [0u8; 2];
+        r.read_exact(&mut buf).await?;
 
         let packet = Packet {
             length,

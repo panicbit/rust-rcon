@@ -7,11 +7,21 @@
 // notice may not be copied, modified, or distributed except
 // according to those terms.
 
+#[cfg(all(feature = "runtime-tokio", feature = "runtime-async_std"))]
+compile_error!("Only one runtime can be enabled at a time");
+
 use err_derive::Error;
 use packet::{Packet, PacketType};
 use std::io;
 use std::time::Duration;
+#[cfg(feature = "runtime-tokio")]
 use tokio::net::{TcpStream, ToSocketAddrs};
+#[cfg(feature = "runtime-tokio")]
+use tokio::time::sleep;
+#[cfg(feature = "runtime-async_std")]
+use async_std::net::{TcpStream, ToSocketAddrs};
+#[cfg(feature = "runtime-async_std")]
+use async_std::task::sleep;
 
 mod packet;
 
@@ -62,7 +72,7 @@ impl Connection {
         self.send(PacketType::ExecCommand, cmd).await?;
 
         if self.minecraft_quirks_enabled {
-            tokio::time::sleep(Duration::from_millis(DELAY_TIME_MILLIS)).await;
+            sleep(Duration::from_millis(DELAY_TIME_MILLIS)).await;
         }
 
         let response = self.receive_response().await?;
