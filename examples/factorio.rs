@@ -1,6 +1,6 @@
 use rcon::{Connection, Error};
 
-#[tokio::main]
+#[async_std::main]
 async fn main() -> Result<(), Error> {
     let address = "localhost:1234";
     let mut conn = Connection::builder()
