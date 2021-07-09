@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- example for Source engine games (tested against Counter Strike: Global Offensive). [@jenrik](https://github.com/jenrik)
+
 ## [0.5.0] - 2021-07-10
 
 ### Added
