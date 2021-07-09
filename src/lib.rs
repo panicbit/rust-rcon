@@ -14,13 +14,7 @@ use err_derive::Error;
 use packet::{Packet, PacketType};
 use std::io;
 use std::time::Duration;
-#[cfg(feature = "runtime-tokio")]
-use tokio::net::{TcpStream, ToSocketAddrs};
-#[cfg(feature = "runtime-tokio")]
-use tokio::time::sleep;
-#[cfg(feature = "runtime-async_std")]
 use async_std::net::{TcpStream, ToSocketAddrs};
-#[cfg(feature = "runtime-async_std")]
 use async_std::task::sleep;
 
 mod packet;

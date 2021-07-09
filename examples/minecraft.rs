@@ -14,7 +14,7 @@ use rcon::{Connection, Error};
     and the rcon password "test"
 */
 
-#[tokio::main]
+#[async_std::main]
 async fn main() -> Result<(), Error> {
     let address = "localhost:25575";
     let mut conn = Connection::builder()

@@ -8,10 +8,7 @@
 // according to those terms.
 
 use std::io;
-#[cfg(feature = "runtime-tokio")]
-use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
-#[cfg(feature = "runtime-async_std")]
-use async_std::io::{Read as AsyncRead, ReadExt, Write as AsyncWrite, prelude::WriteExt};
+use async_std::io::{Read, ReadExt, Write, prelude::WriteExt};
 use bytes::BufMut;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -67,7 +64,7 @@ impl Packet {
         self.id < 0
     }
 
-    pub async fn serialize<T: Unpin + AsyncWrite>(&self, w: &mut T) -> io::Result<()> {
+    pub async fn serialize<T: Unpin + Write>(&self, w: &mut T) -> io::Result<()> {
         // Write bytes to a buffer first so only one tcp packet is sent
         // This is done in order to not overwhelm a Minecraft server
         let mut buf = Vec::with_capacity(self.length as usize);
@@ -83,7 +80,7 @@ impl Packet {
         Ok(())
     }
 
-    pub async fn deserialize<T: Unpin + AsyncRead>(r: &mut T) -> io::Result<Packet> {
+    pub async fn deserialize<T: Unpin + Read>(r: &mut T) -> io::Result<Packet> {
         let mut buf  = [0u8; 4];
 
         r.read_exact(&mut buf).await?;
