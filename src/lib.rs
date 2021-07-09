@@ -7,9 +7,6 @@
 // notice may not be copied, modified, or distributed except
 // according to those terms.
 
-#[cfg(all(feature = "runtime-tokio", feature = "runtime-async_std"))]
-compile_error!("Only one runtime can be enabled at a time");
-
 use err_derive::Error;
 use packet::{Packet, PacketType};
 use std::io;
