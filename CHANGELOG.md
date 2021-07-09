@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.5.0] - 2021-07-10
 
 ### Added
-- support for running on an `async-std` executer. It should now be possible to use `rcon` with both, `tokio` and `async-std`. @jenrik
+- support for running on an `async-std` executer. It should now be possible to use `rcon` with both, `tokio` and `async-std`. [@jenrik](https://github.com/jenrik)
 
 ## [0.4.0] - 2020-12-26
 
