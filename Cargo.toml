@@ -7,10 +7,11 @@ license = "MIT OR Apache-2.0"
 keywords = ["source", "rcon", "protocol", "minecraft"]
 repository = "https://github.com/panicbit/rust-rcon"
 edition = "2018"
+resolver = "2"
 
 [dependencies]
 err-derive = "0.3.0"
-async-std = { version = "1.9.0", default-features = false, features = ["async-io"] }
+async-std = "1.9.0"
 bytes = "1.0.1"
 
 [dev-dependencies]
