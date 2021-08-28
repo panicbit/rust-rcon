@@ -7,7 +7,7 @@
 // notice may not be copied, modified, or distributed except
 // according to those terms.
 
-use rcon::{Connection, Error};
+use rcon::{AsyncStdStream, Connection, Error};
 
 /*
     This example expects a Minecraft with rcon enabled on port 25575
@@ -17,9 +17,10 @@ use rcon::{Connection, Error};
 #[async_std::main]
 async fn main() -> Result<(), Error> {
     let address = "localhost:25575";
-    let mut conn = Connection::builder()
+    let mut conn = <Connection<AsyncStdStream>>::builder()
         .enable_minecraft_quirks(true)
-        .connect(address, "test").await?;
+        .connect(address, "test")
+        .await?;
 
     demo(&mut conn, "list").await?;
     demo(&mut conn, "say Rust lang rocks! ;P").await?;
@@ -28,7 +29,7 @@ async fn main() -> Result<(), Error> {
     Ok(())
 }
 
-async fn demo(conn: &mut Connection, cmd: &str) -> Result<(), Error> {
+async fn demo(conn: &mut Connection<AsyncStdStream>, cmd: &str) -> Result<(), Error> {
     let resp = conn.cmd(cmd).await?;
     println!("{}", resp);
     Ok(())
