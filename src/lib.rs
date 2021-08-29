@@ -274,8 +274,9 @@ impl<T> Builder<T> {
     /// Using [futures-timer](https://docs.rs/futures-timer) instead of Tokio's native timer:
     ///
     /// ```
+    /// # use tokio::net::TcpStream;
     /// # async {
-    /// let connection = rcon::TokioConnection::builder()
+    /// let connection = <rcon::Connection<TcpStream>>::builder()
     ///     .enable_minecraft_quirks(true)
     ///     .sleep_fn(futures_timer::Delay::new)
     ///     .connect("localhost:25575", "hunter2")
