@@ -148,7 +148,7 @@ impl Connection {
     }
 }
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct Builder {
     minecraft_quirks_enabled: bool,
     factorio_quirks_enabled: bool,
