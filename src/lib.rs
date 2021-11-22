@@ -7,12 +7,12 @@
 // notice may not be copied, modified, or distributed except
 // according to those terms.
 
+use async_std::net::{TcpStream, ToSocketAddrs};
+use async_std::task::sleep;
 use err_derive::Error;
 use packet::{Packet, PacketType};
 use std::io;
 use std::time::Duration;
-use async_std::net::{TcpStream, ToSocketAddrs};
-use async_std::task::sleep;
 
 mod packet;
 
@@ -52,7 +52,8 @@ impl Connection {
     pub async fn connect<T: ToSocketAddrs>(address: T, password: &str) -> Result<Connection> {
         Self::builder()
             .enable_minecraft_quirks(true)
-            .connect(address, password).await
+            .connect(address, password)
+            .await
     }
 
     pub async fn cmd(&mut self, cmd: &str) -> Result<String> {
@@ -182,11 +183,17 @@ impl Builder {
         self
     }
 
+    /// Open connection to server with given address and password.
     pub async fn connect<A>(self, address: A, password: &str) -> Result<Connection>
     where
-        A: ToSocketAddrs
+        A: ToSocketAddrs,
     {
         let stream = TcpStream::connect(address).await?;
+        self.connect_stream(stream, password).await
+    }
+
+    /// Initialize connection to server over given stream with given password.
+    pub async fn connect_stream(self, stream: TcpStream, password: &str) -> Result<Connection> {
         let mut conn = Connection {
             stream,
             next_packet_id: INITIAL_PACKET_ID,
