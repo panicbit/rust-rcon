@@ -18,10 +18,11 @@ use err_derive::Error;
 use packet::{Packet, PacketType};
 use std::future::Future;
 use std::io;
+use std::fmt::{self, Formatter, Debug};
 use std::marker::PhantomData;
 use std::pin::Pin;
 use std::time::Duration;
-use sync_wrapper::SyncWrapper;
+use std::sync::Arc;
 use tokio::io::{AsyncRead, AsyncWrite};
 
 #[cfg(feature = "rt-async-std")]
@@ -181,7 +182,7 @@ impl<T: AsyncRead + AsyncWrite + Unpin> Connection<T> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone)]
 enum SleepFn {
     #[cfg(feature = "rt-tokio")]
     Tokio,
@@ -189,10 +190,24 @@ enum SleepFn {
     AsyncStd,
     #[cfg(not(any(feature = "rt-tokio", feature = "rt-async-std")))]
     None,
-    Custom(SyncWrapper<CustomSleepFn>),
+    Custom(CustomSleepFn),
 }
 
-type CustomSleepFn = Box<dyn FnMut(Duration) -> Pin<Box<dyn Future<Output = ()> + Send>> + Send>;
+impl Debug for SleepFn {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            #[cfg(feature = "rt-tokio")]
+            Self::Tokio => f.write_str("tokio::time::sleep"),
+            #[cfg(feature = "rt-async-std")]
+            Self::AsyncStd => f.write_str("async_std::task::sleep"),
+            #[cfg(not(any(feature = "rt-tokio", feature = "rt-async-std")))]
+            Self::None => f.write_str("None"),
+            Self::Custom(_) => f.write_str("custom sleep function"),
+        }
+    }
+}
+
+type CustomSleepFn = Arc<dyn Fn(Duration) -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>;
 
 impl SleepFn {
     async fn call(&mut self, duration: Duration) {
@@ -203,7 +218,7 @@ impl SleepFn {
             Self::AsyncStd => async_std::task::sleep(duration).await,
             #[cfg(not(any(feature = "rt-tokio", feature = "rt-async-std")))]
             Self::None => unreachable!(),
-            Self::Custom(f) => f.get_mut()(duration).await,
+            Self::Custom(f) => f(duration).await,
         }
     }
 }
@@ -229,6 +244,17 @@ impl<T> Default for Builder<T> {
             minecraft_quirks_enabled: false,
             factorio_quirks_enabled: false,
             sleep_fn,
+            _io: PhantomData,
+        }
+    }
+}
+
+impl<T> Clone for Builder<T> {
+    fn clone(&self) -> Self {
+        Self {
+            minecraft_quirks_enabled: self.minecraft_quirks_enabled,
+            factorio_quirks_enabled: self.factorio_quirks_enabled,
+            sleep_fn: self.sleep_fn.clone(),
             _io: PhantomData,
         }
     }
@@ -285,14 +311,14 @@ impl<T> Builder<T> {
     /// # rcon::Result::Ok(())
     /// # };
     /// ```
-    pub fn sleep_fn<F, Fut>(mut self, mut f: F) -> Self
+    pub fn sleep_fn<F, Fut>(mut self, f: F) -> Self
     where
-        F: FnMut(Duration) -> Fut + Send + 'static,
+        F: Fn(Duration) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = ()> + Send + 'static,
     {
-        self.sleep_fn = SleepFn::Custom(SyncWrapper::new(Box::new(move |duration| {
+        self.sleep_fn = SleepFn::Custom(Arc::new(move |duration| {
             Box::pin(f(duration))
-        })));
+        }));
         self
     }
 
