@@ -16,13 +16,13 @@
 
 use err_derive::Error;
 use packet::{Packet, PacketType};
+use std::fmt::{self, Debug, Formatter};
 use std::future::Future;
 use std::io;
-use std::fmt::{self, Formatter, Debug};
 use std::marker::PhantomData;
 use std::pin::Pin;
-use std::time::Duration;
 use std::sync::Arc;
+use std::time::Duration;
 use tokio::io::{AsyncRead, AsyncWrite};
 
 #[cfg(feature = "rt-async-std")]
@@ -207,7 +207,8 @@ impl Debug for SleepFn {
     }
 }
 
-type CustomSleepFn = Arc<dyn Fn(Duration) -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>;
+type CustomSleepFn =
+    Arc<dyn Fn(Duration) -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>;
 
 impl SleepFn {
     async fn call(&mut self, duration: Duration) {
@@ -316,9 +317,7 @@ impl<T> Builder<T> {
         F: Fn(Duration) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = ()> + Send + 'static,
     {
-        self.sleep_fn = SleepFn::Custom(Arc::new(move |duration| {
-            Box::pin(f(duration))
-        }));
+        self.sleep_fn = SleepFn::Custom(Arc::new(move |duration| Box::pin(f(duration))));
         self
     }
 
