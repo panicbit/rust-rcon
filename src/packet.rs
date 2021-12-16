@@ -8,8 +8,7 @@
 // according to those terms.
 
 use std::io;
-use async_std::io::{Read, ReadExt, Write, prelude::WriteExt};
-use bytes::BufMut;
+use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum PacketType {
@@ -64,24 +63,24 @@ impl Packet {
         self.id < 0
     }
 
-    pub async fn serialize<T: Unpin + Write>(&self, w: &mut T) -> io::Result<()> {
+    pub async fn serialize<T: Unpin + AsyncWrite>(&self, w: &mut T) -> io::Result<()> {
         // Write bytes to a buffer first so only one tcp packet is sent
         // This is done in order to not overwhelm a Minecraft server
         let mut buf = Vec::with_capacity(self.length as usize);
 
-        buf.put_slice(&self.length.to_le_bytes());
-        buf.put_slice(&self.id.to_le_bytes());
-        buf.put_slice(&self.ptype.to_i32().to_le_bytes());
-        buf.put_slice(self.body.as_bytes());
-        buf.put_slice(&[0x00, 0x00]);
+        buf.extend_from_slice(&self.length.to_le_bytes());
+        buf.extend_from_slice(&self.id.to_le_bytes());
+        buf.extend_from_slice(&self.ptype.to_i32().to_le_bytes());
+        buf.extend_from_slice(self.body.as_bytes());
+        buf.extend_from_slice(&[0x00, 0x00]);
 
         w.write_all(&buf).await?;
 
         Ok(())
     }
 
-    pub async fn deserialize<T: Unpin + Read>(r: &mut T) -> io::Result<Packet> {
-        let mut buf  = [0u8; 4];
+    pub async fn deserialize<T: Unpin + AsyncRead>(r: &mut T) -> io::Result<Packet> {
+        let mut buf = [0u8; 4];
 
         r.read_exact(&mut buf).await?;
         let length = i32::from_le_bytes(buf);
