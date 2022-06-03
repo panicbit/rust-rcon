@@ -120,17 +120,16 @@ impl<T: AsyncRead + AsyncWrite + Unpin> Connection<T> {
     }
 
     async fn receive_multi_packet_response(&mut self) -> Result<String> {
-        // the server processes packets in order, so send an empty packet and
-        // remember its id to detect the end of a multi-packet response
-        let end_id = self.send(PacketType::ExecCommand, "").await?;
-
+        // the server processes packets in order, so send an empty ResponseValue packet
+        // https://developer.valvesoftware.com/wiki/Source_RCON_Protocol#Multiple-packet_Responses
+        self.send(PacketType::ResponseValue, "").await?;
         let mut result = String::new();
 
         loop {
             let received_packet = self.receive_packet().await?;
-
-            if received_packet.get_id() == end_id {
-                // This is the response to the end-marker packet
+            if (received_packet.get_type() == PacketType::ResponseValue)
+                && (received_packet.get_body() == "")
+            {
                 return Ok(result);
             }
 
